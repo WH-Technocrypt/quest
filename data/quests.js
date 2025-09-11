@@ -1,7 +1,8 @@
+// src/data/quests.ts
 // Static quest definitions
 // Each quest has: id, type, title, target_post_id / target_user_id, xp
 
-const quests = [
+export const quests = [
   {
     id: 'like_post_1',
     type: 'like',
@@ -38,5 +39,3 @@ const quests = [
     xp: 15
   }
 ];
-
-module.exports = { quests };

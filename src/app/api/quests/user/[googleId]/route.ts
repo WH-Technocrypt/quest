@@ -1,24 +1,24 @@
+// src/app/api/quests/user/[googleId]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { quests } from '@/data/quests';
+import { findUserByGoogleId } from '@/lib/dataManager';
 
-// Import quests data
-const quests = (await import('../../../../../data/quests.js')).quests;
-
-export async function GET(request: NextRequest, { params }: { params: { googleId: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { googleId: string } }
+) {
   try {
     const { googleId } = params;
 
-    // Import data manager functions
-    const { findUserByGoogleId } = await import('@/lib/dataManager');
-    
-    // Find user
+    // Find user from data manager
     const user = findUserByGoogleId(googleId);
-    
+
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Add user status to each quest
-    const questsWithStatus = quests.map(quest => ({
+    // Attach user quest status
+    const questsWithStatus = quests.map((quest) => ({
       ...quest,
       status: user.quests[quest.id] || 'not_started'
     }));
