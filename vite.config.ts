@@ -15,4 +15,15 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    chunkSizeWarningLimit: 1000, // naikkan limit warning
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ["react", "react-dom"], // pisahkan React
+          vendors: ["@walletconnect/utils", "@coinbase/wallet-sdk"], // contoh vendor besar
+        },
+      },
+    },
+  },
 }));
