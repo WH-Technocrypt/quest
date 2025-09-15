@@ -1,4 +1,8 @@
 import { useState } from 'react';
+import { useAccount, useReadContract, useConfig } from 'wagmi';
+import { writeContract } from 'wagmi/actions';
+import { toast } from '@/components/ui/sonner';
+import { CONTRACT_ADDRESS, CONTRACT_ABI } from '@/lib/blockchainConfig';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,10 +23,60 @@ export const CreatePost = ({
   const [content, setContent] = useState('');
   const maxChars = 280;
 
-  const handlePost = () => {
+  const { address } = useAccount();
+  const config = useConfig();
+  const { data: userData } = useReadContract({
+    address: CONTRACT_ADDRESS,
+    abi: CONTRACT_ABI,
+    functionName: 'users',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address },
+  });
+  const isRegistered = userData && typeof userData === 'object' && 'isActive' in userData && (userData as any).isActive;
+
+
+  const handlePost = async () => {
     if (content.trim()) {
-      onPost?.(content);
-      setContent('');
+      if (!address) {
+        toast.error('Please connect your wallet first.');
+        return;
+      }
+      if (!isRegistered) {
+        toast.error('You must register your profile before posting. Go to Profile > Save Changes.');
+        return;
+      }
+      if (content.trim()) {
+        try {
+          const tx = await writeContract(config, {
+            address: CONTRACT_ADDRESS,
+            abi: CONTRACT_ABI,
+            functionName: 'createPost',
+            args: [content],
+            account: address,
+            chain: config.chains[0],
+          });
+          if (tx) {
+            toast(
+              <span>
+                Post created!{' '}
+                <a
+                  href={`https://explorer.uomi.ai/tx/${tx}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline text-primary"
+                >
+                  View on Explorer
+                </a>
+              </span>
+            );
+          }
+
+          onPost?.(content);
+          setContent('');
+        } catch (e) {
+          toast.error('Failed to create post.');
+        }
+      }
     }
   };
 
@@ -84,7 +138,7 @@ export const CreatePost = ({
                 variant="gaming"
                 size="sm"
               >
-                Post Quest
+                {'Post Quest'}
               </Button>
             </div>
           </div>

@@ -1,9 +1,20 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
+import { useAccount, useReadContract, useConfig } from 'wagmi';
+import { writeContract } from 'wagmi/actions';
+import { CONTRACT_ADDRESS, CONTRACT_ABI } from '@/lib/blockchainConfig';
+import { toast } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, MessageCircle, Repeat2, Share, MoreHorizontal, Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import {
+  Heart,
+  MessageCircle,
+  Repeat2,
+  Share,
+  MoreHorizontal,
+  Zap,
+} from 'lucide-react';
 
 interface SocialPostProps {
   id: string;
@@ -26,7 +37,7 @@ interface SocialPostProps {
   onRetweet?: () => void;
 }
 
-export const SocialPost = ({
+export const SocialPost: React.FC<SocialPostProps> = ({
   id,
   author,
   content,
@@ -40,22 +51,181 @@ export const SocialPost = ({
   onLike,
   onComment,
   onRetweet,
-}: SocialPostProps) => {
+}) => {
   const [liked, setLiked] = useState(isLiked);
   const [retweeted, setRetweeted] = useState(isRetweeted);
   const [likeCount, setLikeCount] = useState(likes);
   const [retweetCount, setRetweetCount] = useState(retweets);
 
-  const handleLike = () => {
-    setLiked(!liked);
-    setLikeCount(liked ? likeCount - 1 : likeCount + 1);
-    onLike?.();
+  const { address } = useAccount();
+  const config = useConfig();
+  const { data: userData } = useReadContract({
+    address: CONTRACT_ADDRESS,
+    abi: CONTRACT_ABI,
+    functionName: 'users',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address },
+  });
+
+  const isRegistered =
+    userData &&
+    typeof userData === 'object' &&
+    'isActive' in userData &&
+    (userData as any).isActive;
+
+  // Handler for Like
+  const handleLike = async () => {
+    if (!address) {
+      toast.error('Please connect your wallet first.');
+      return;
+    }
+    if (!isRegistered) {
+      toast.error('You must register your profile before liking. Go to Profile > Save Changes.');
+      return;
+    }
+    try {
+      const tx = await writeContract(config, {
+        address: CONTRACT_ADDRESS,
+        abi: CONTRACT_ABI,
+        functionName: 'likePost',
+        args: [Number(id)],
+        account: address,
+        chain: config.chains[0],
+      });
+      if (tx) {
+        toast(
+          <span>
+            Like sent!{' '}
+            <a
+              href={`https://explorer.uomi.ai/tx/${tx}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline text-primary"
+            >
+              View on Explorer
+            </a>
+          </span>
+        );
+      }
+      setLiked(!liked);
+      setLikeCount(liked ? likeCount - 1 : likeCount + 1);
+      onLike?.();
+    } catch (e) {}
   };
 
-  const handleRetweet = () => {
-    setRetweeted(!retweeted);
-    setRetweetCount(retweeted ? retweetCount - 1 : retweetCount + 1);
-    onRetweet?.();
+  // Handler for Retweet
+  const handleRetweet = async () => {
+    if (!address) {
+      toast.error('Please connect your wallet first.');
+      return;
+    }
+    if (!isRegistered) {
+      toast.error('You must register your profile before retweeting. Go to Profile > Save Changes.');
+      return;
+    }
+    try {
+      const tx = await writeContract(config, {
+        address: CONTRACT_ADDRESS,
+        abi: CONTRACT_ABI,
+        functionName: 'retweetPost',
+        args: [Number(id)],
+        account: address,
+        chain: config.chains[0],
+      });
+      if (tx) {
+        toast(
+          <span>
+            Retweet sent!{' '}
+            <a
+              href={`https://explorer.uomi.ai/tx/${tx}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline text-primary"
+            >
+              View on Explorer
+            </a>
+          </span>
+        );
+      }
+      setRetweeted(!retweeted);
+      setRetweetCount(retweeted ? retweetCount - 1 : retweetCount + 1);
+      onRetweet?.();
+    } catch (e) {}
+  };
+
+  // Handler for Comment
+  const handleComment = async () => {
+    if (!address) {
+      toast.error('Please connect your wallet first.');
+      return;
+    }
+    if (!isRegistered) {
+      toast.error('You must register your profile before commenting. Go to Profile > Save Changes.');
+      return;
+    }
+    try {
+      const tx = await writeContract(config, {
+        address: CONTRACT_ADDRESS,
+        abi: CONTRACT_ABI,
+        functionName: 'commentPost',
+        args: [Number(id)],
+        account: address,
+        chain: config.chains[0],
+      });
+      if (tx) {
+        toast(
+          <span>
+            Comment sent!{' '}
+            <a
+              href={`https://explorer.uomi.ai/tx/${tx}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline text-primary"
+            >
+              View on Explorer
+            </a>
+          </span>
+        );
+      }
+      onComment?.();
+    } catch (e) {}
+  };
+
+  // Handler for Share
+  const handleShare = async () => {
+    if (!address) {
+      toast.error('Please connect your wallet first.');
+      return;
+    }
+    if (!isRegistered) {
+      toast.error('You must register your profile before sharing. Go to Profile > Save Changes.');
+      return;
+    }
+    try {
+      const tx = await writeContract(config, {
+        address: CONTRACT_ADDRESS,
+        abi: CONTRACT_ABI,
+        functionName: 'sharePost',
+        args: [Number(id)],
+        account: address,
+        chain: config.chains[0],
+      });
+      if (tx) {
+        toast(
+          <span>
+            Share sent!{' '}
+            <a
+              href={`https://explorer.uomi.ai/tx/${tx}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline text-primary"
+            >
+              View on Explorer
+            </a>
+          </span>
+        );
+      }
+    } catch (e) {}
   };
 
   return (
@@ -97,7 +267,7 @@ export const SocialPost = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={onComment}
+              onClick={handleComment}
               className="flex items-center gap-2 text-muted-foreground hover:text-secondary hover:bg-secondary/10"
             >
               <MessageCircle className="w-4 h-4" />
@@ -135,6 +305,7 @@ export const SocialPost = ({
             <Button
               variant="ghost"
               size="sm"
+              onClick={handleShare}
               className="text-muted-foreground hover:text-foreground hover:bg-accent/10"
             >
               <Share className="w-4 h-4" />

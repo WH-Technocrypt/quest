@@ -95,11 +95,37 @@ contract WebQuestPlatform is Ownable, ReentrancyGuard {
     
     // Constants
     uint256 public constant XP_PER_LEVEL = 1000;
-    uint256 public constant POST_XP_REWARD = 25;
-    uint256 public constant LIKE_XP_REWARD = 5;
-    uint256 public constant RETWEET_XP_REWARD = 10;
+    uint256 public constant POST_XP_REWARD = 50;
+    uint256 public constant LIKE_XP_REWARD = 10;
+    uint256 public constant RETWEET_XP_REWARD = 40;
+    uint256 public constant COMMENT_XP_REWARD = 50;
+    uint256 public constant SHARE_XP_REWARD = 25;
+
+    /**
+     * @dev Constructor — set deployer sebagai owner (sesuai Ownable v5+)
+     */
+    constructor() Ownable(msg.sender) {}
     
-    constructor() {}
+    /**
+     * @dev Comment on a post
+     */
+    function commentPost(uint256 _postId) external {
+        require(registeredUsers[msg.sender], "User not registered");
+        require(posts[_postId].isActive, "Post does not exist");
+        posts[_postId].comments++;
+        _awardXP(msg.sender, COMMENT_XP_REWARD, "Post Comment");
+        // You can emit an event here if needed
+    }
+
+    /**
+     * @dev Share a post
+     */
+    function sharePost(uint256 _postId) external {
+        require(registeredUsers[msg.sender], "User not registered");
+        require(posts[_postId].isActive, "Post does not exist");
+        _awardXP(msg.sender, SHARE_XP_REWARD, "Post Share");
+        // You can emit an event here if needed
+    }
     
     /**
      * @dev Register a new user
@@ -265,6 +291,7 @@ contract WebQuestPlatform is Ownable, ReentrancyGuard {
         require(registeredUsers[_user], "User not registered");
         require(quests[_questId].isActive, "Quest does not exist");
         require(userQuests[_user][_questId].startedAt > 0, "Quest not started");
+        // <-- fixed typo here: check .completed (not .complete_]()_()])
         require(!userQuests[_user][_questId].completed, "Quest already completed");
         
         userQuests[_user][_questId].progress = _progress;

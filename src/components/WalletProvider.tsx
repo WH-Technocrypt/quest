@@ -1,42 +1,38 @@
-import '@rainbow-me/rainbowkit/styles.css';
-import {
-  getDefaultConfig,
-  RainbowKitProvider,
-} from '@rainbow-me/rainbowkit';
-import { WagmiProvider } from 'wagmi';
-import {
-  mainnet,
-  polygon,
-  optimism,
-  arbitrum,
-  base,
-} from 'wagmi/chains';
-import {
-  QueryClientProvider,
-  QueryClient,
-} from '@tanstack/react-query';
-
-const config = getDefaultConfig({
-  appName: 'Web Quest Platform',
-  projectId: 'YOUR_PROJECT_ID', // Get this from WalletConnect Cloud
-  chains: [mainnet, polygon, optimism, arbitrum, base],
-  ssr: false,
-});
-
-const queryClient = new QueryClient();
+import { useEffect } from 'react';
 
 interface WalletProviderProps {
   children: React.ReactNode;
 }
 
+// Jaringan Uomi
+const UOMI_PARAMS = {
+  chainId: '0x1122', // 4386 dalam hex
+  chainName: 'Uomi',
+  rpcUrls: ['https://turing.uomi.ai'],
+  nativeCurrency: {
+    name: 'Uomi',
+    symbol: 'UOMI',
+    decimals: 18,
+  },
+  blockExplorerUrls: ['https://explorer.uomi.ai'],
+};
+
 export const WalletProvider = ({ children }: WalletProviderProps) => {
-  return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider>
-          {children}
-        </RainbowKitProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
-  );
+  useEffect(() => {
+    // Cek dan konek ke jaringan Uomi saat wallet connect
+    const switchToUomi = async () => {
+      if (window.ethereum) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [UOMI_PARAMS],
+          });
+        } catch (err) {
+          // User reject atau sudah di jaringan
+        }
+      }
+    };
+    switchToUomi();
+  }, []);
+  return <>{children}</>;
 };

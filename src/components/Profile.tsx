@@ -16,14 +16,52 @@ import {
 } from 'lucide-react';
 import { mockUser } from '@/data/mockData';
 
+import { useAccount, useConnect, useConfig } from 'wagmi';
+import { writeContract } from 'wagmi/actions';
+import { toast } from '@/components/ui/sonner';
+import { CONTRACT_ADDRESS, CONTRACT_ABI } from '@/lib/blockchainConfig';
+
 export const Profile = () => {
+  const config = useConfig();
+  const { connect, connectors, isPending } = useConnect(); // ✅ hook harus di dalam komponen
+  const { address, isConnected } = useAccount();
+
   const [username, setUsername] = useState(mockUser.username);
   const [displayName, setDisplayName] = useState(mockUser.name);
   const [profileImage, setProfileImage] = useState(mockUser.avatar);
   
-  const handleSave = () => {
-    // TODO: Update user data in smart contract
-    console.log('Saving profile:', { username, displayName, profileImage });
+  const handleSave = async () => {
+    if (!address) {
+      toast.error('Wallet not connected');
+      return;
+    }
+    try {
+      const txHash = await writeContract(config, {
+        address: CONTRACT_ADDRESS,
+        abi: CONTRACT_ABI,
+        functionName: 'registerUser',
+        args: [username, displayName],
+        account: address,
+        chain: config.chains[0],
+      });
+      if (txHash) {
+        toast(
+          <span>
+            Profile updated!{' '}
+            <a
+              href={`https://explorer.uomi.ai/tx/${txHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline text-primary"
+            >
+              View on Explorer
+            </a>
+          </span>
+        );
+      }
+    } catch (e) {
+      toast.error('Failed to update profile');
+    }
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -116,15 +154,30 @@ export const Profile = () => {
               <Label>Connected Wallet</Label>
               <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
                 <Wallet className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm font-mono">0x1234...5678</span>
-                <Badge variant="outline" className="ml-auto">Connected</Badge>
+                <span className="text-sm font-mono">
+                  {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Not Connected'}
+                </span>
+                <Badge variant={address ? 'outline' : 'destructive'} className="ml-auto">
+                  {address ? 'Connected' : 'Not Connected'}
+                </Badge>
               </div>
             </div>
             
-            <Button onClick={handleSave} className="w-full gap-2">
-              <Save className="w-4 h-4" />
-              Save Changes
-            </Button>
+            {!address ? (
+              <Button
+                onClick={() => connect({ connector: connectors[0] })}
+                className="w-full gap-2"
+                disabled={isPending}
+              >
+                <Wallet className="w-4 h-4" />
+                {isPending ? 'Connecting...' : 'Connect Wallet'}
+              </Button>
+            ) : (
+              <Button onClick={handleSave} className="w-full gap-2">
+                <Save className="w-4 h-4" />
+                Save Changes
+              </Button>
+            )}
           </div>
         </Card>
       </div>
