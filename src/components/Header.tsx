@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { Zap, Trophy, Star } from 'lucide-react';
 
 interface HeaderProps {
@@ -9,6 +10,20 @@ interface HeaderProps {
 
 export const Header = ({ userXP = 1250, userLevel = 5, maxXP = 2000 }: HeaderProps) => {
   const xpPercentage = (userXP / maxXP) * 100;
+  const { address, isConnecting } = useAccount();
+  const { connect, connectors, isPending } = useConnect();
+  const { disconnect } = useDisconnect();
+
+  // Tombol wallet
+  const walletButton = address ? (
+    <Button variant="connect" size="sm" onClick={() => disconnect()}>
+      Disconnect ({address.slice(0, 6)}...{address.slice(-4)})
+    </Button>
+  ) : (
+    <Button variant="connect" size="sm" onClick={() => connect({ connector: connectors[0] })} disabled={isConnecting || isPending}>
+      {isConnecting || isPending ? 'Connecting...' : 'Connect Wallet'}
+    </Button>
+  );
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -27,27 +42,26 @@ export const Header = ({ userXP = 1250, userLevel = 5, maxXP = 2000 }: HeaderPro
             </div>
           </div>
 
-          {/* XP Bar & Level */}
+          {/* XP Bar & Level + Wallet Button */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3 bg-card rounded-lg px-4 py-2 border border-border">
               <div className="flex items-center gap-2">
                 <Trophy className="w-4 h-4 text-warning" />
                 <span className="text-sm font-semibold">Level {userLevel}</span>
               </div>
-              
               <div className="w-32 h-2 bg-xp-bg rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-gradient-to-r from-success to-success/80 transition-all duration-500 glow-success"
                   style={{ width: `${xpPercentage}%` }}
                 />
               </div>
-              
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Zap className="w-3 h-3" />
                 <span>{userXP}/{maxXP} XP</span>
               </div>
             </div>
-
+            {/* Wallet Button */}
+            {walletButton}
           </div>
         </div>
       </div>

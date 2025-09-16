@@ -23,12 +23,17 @@ import { CONTRACT_ADDRESS, CONTRACT_ABI } from '@/lib/blockchainConfig';
 
 export const Profile = () => {
   const config = useConfig();
-  const { connect, connectors, isPending } = useConnect(); // ✅ hook harus di dalam komponen
+  const { connect, connectors, isPending } = useConnect();
   const { address, isConnected } = useAccount();
 
   const [username, setUsername] = useState(mockUser.username);
   const [displayName, setDisplayName] = useState(mockUser.name);
   const [profileImage, setProfileImage] = useState(mockUser.avatar);
+  // Tambahan untuk bind address dan CEX ID
+  const [bindAddress, setBindAddress] = useState("");
+  const [okxId, setOkxId] = useState("");
+  const [bitgetId, setBitgetId] = useState("");
+  const [bybitId, setBybitId] = useState("");
   
   const handleSave = async () => {
     if (!address) {

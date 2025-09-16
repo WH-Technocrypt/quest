@@ -20,16 +20,22 @@ contract WebQuestPlatform is Ownable, ReentrancyGuard {
     
     // Structs
     struct User {
-        uint256 id;
-        address walletAddress;
-        string twitterHandle;
-        string username;
-        uint256 totalXP;
-        uint256 level;
-        uint256 postsCount;
-        uint256 questsCompleted;
-        uint256 joinedAt;
-        bool isActive;
+    uint256 id;
+    address walletAddress;
+    string twitterHandle;
+    string username;
+    uint256 totalXP;
+    uint256 level;
+    uint256 postsCount;
+    uint256 questsCompleted;
+    uint256 joinedAt;
+    bool isActive;
+    // Tambahan untuk CEX dan daily checkin
+    string bindAddress;
+    string okxId;
+    string bitgetId;
+    string bybitId;
+    uint256 lastCheckin;
     }
     
     struct Post {
@@ -147,8 +153,33 @@ contract WebQuestPlatform is Ownable, ReentrancyGuard {
             postsCount: 0,
             questsCompleted: 0,
             joinedAt: block.timestamp,
-            isActive: true
+            isActive: true,
+            bindAddress: "",
+            okxId: "",
+            bitgetId: "",
+            bybitId: "",
+            lastCheckin: 0
         });
+    /**
+     * @dev Daily check-in, hanya bisa 1x/24 jam, dapat XP 50
+     */
+    function dailyCheckin() external {
+        require(registeredUsers[msg.sender], "User not registered");
+        require(block.timestamp > users[msg.sender].lastCheckin + 1 days, "Check-in only once every 24h");
+        users[msg.sender].lastCheckin = block.timestamp;
+        _awardXP(msg.sender, 50, "Daily Check-in");
+    }
+
+    /**
+     * @dev Set bind address dan CEX ID (OKX, Bitget, Bybit)
+     */
+    function setUserCexInfo(string memory _bindAddress, string memory _okxId, string memory _bitgetId, string memory _bybitId) external {
+        require(registeredUsers[msg.sender], "User not registered");
+        users[msg.sender].bindAddress = _bindAddress;
+        users[msg.sender].okxId = _okxId;
+        users[msg.sender].bitgetId = _bitgetId;
+        users[msg.sender].bybitId = _bybitId;
+    }
         
         registeredUsers[msg.sender] = true;
         allUsers.push(msg.sender);

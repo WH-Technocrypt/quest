@@ -83,10 +83,10 @@ export const Sidebar = ({ activeTab, onTabChange }: SidebarProps) => {
         <Button
           variant="ghost"
           className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground"
-          onClick={() => onTabChange('settings')}
+          onClick={() => onTabChange('bind')}
         >
           <Settings className="w-5 h-5" />
-          Settings
+          Bind
         </Button>
       </div>
     </aside>

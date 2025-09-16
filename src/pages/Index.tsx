@@ -7,10 +7,24 @@ import { CreatePost } from '@/components/CreatePost';
 import { Profile } from '@/components/Profile';
 import { Leaderboard } from '@/components/Leaderboard';
 import { mockPosts, mockQuests, mockUser } from '@/data/mockData';
+import { Settings } from './Settings';
+import { Button } from '@/components/ui/button';
+import { useAccount, useConfig } from 'wagmi';
+import { writeContract } from 'wagmi/actions';
+import { CONTRACT_ADDRESS, CONTRACT_ABI } from '@/lib/blockchainConfig';
+import { toast } from '@/components/ui/sonner';
+
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [posts, setPosts] = useState(mockPosts);
+
+  // HOOKS DI LEVEL ATAS
+  const { address } = useAccount();
+  const config = useConfig();
+  const [isLoading, setIsLoading] = useState(false);
+  const [lastCheckin, setLastCheckin] = useState<number | null>(null);
+  const [checkedIn, setCheckedIn] = useState(false);
 
   const handleCreatePost = (content: string) => {
     const newPost = {
@@ -33,6 +47,26 @@ const Index = () => {
     setPosts([newPost, ...posts]);
   };
 
+  // Daily Check-in handler
+  const handleCheckin = async () => {
+    setIsLoading(true);
+    try {
+      await writeContract(config, {
+        address: CONTRACT_ADDRESS,
+        abi: CONTRACT_ABI,
+        functionName: 'dailyCheckin',
+        account: address,
+        chain: config.chains[0],
+      });
+      setCheckedIn(true);
+      setLastCheckin(Date.now());
+      toast.success('Check-in berhasil! +50 XP');
+    } catch (e) {
+      toast.error('Check-in gagal atau sudah dilakukan hari ini');
+    }
+    setIsLoading(false);
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'home':
@@ -50,7 +84,6 @@ const Index = () => {
             </div>
           </div>
         );
-      
       case 'quests':
         return (
           <div className="space-y-6">
@@ -58,20 +91,43 @@ const Index = () => {
               <h2 className="text-2xl font-bold mb-2">Available Quests</h2>
               <p className="text-muted-foreground">Complete quests to earn XP and level up your profile!</p>
             </div>
+            {/* Daily Check-in */}
+            <div className="mb-4">
+              <Button onClick={handleCheckin} disabled={isLoading || checkedIn} className="w-full">
+                {isLoading ? 'Checking in...' : checkedIn ? 'Checked in today!' : 'Daily Check-in (+50 XP)'}
+              </Button>
+            </div>
             <div className="grid gap-4 md:grid-cols-2">
               {mockQuests.map((quest) => (
-                <QuestCard key={quest.id} {...quest} />
+                <QuestCard
+                  key={quest.id}
+                  {...quest}
+                  onClaim={async () => {
+                    try {
+                      await writeContract(config, {
+                        address: CONTRACT_ADDRESS,
+                        abi: CONTRACT_ABI,
+                        functionName: 'claimQuestReward',
+                        args: [Number(quest.id)],
+                        account: address,
+                        chain: config.chains[0],
+                      });
+                      toast.success('Reward claimed!');
+                    } catch (e) {
+                      toast.error('Failed to claim reward.');
+                    }
+                  }}
+                />
               ))}
             </div>
           </div>
         );
-      
       case 'leaderboard':
         return <Leaderboard />;
-      
       case 'profile':
         return <Profile />;
-      
+      case 'bind':
+        return <Settings />;
       default:
         return (
           <div className="flex items-center justify-center min-h-[400px]">
@@ -83,7 +139,6 @@ const Index = () => {
         );
     }
   };
-
   return (
     <div className="min-h-screen bg-background">
       <Header
@@ -91,19 +146,16 @@ const Index = () => {
         userLevel={mockUser.level}
         maxXP={mockUser.maxXP}
       />
-      
       <div className="flex">
         <Sidebar
           activeTab={activeTab}
           onTabChange={setActiveTab}
         />
-        
         <main className="flex-1 p-6">
           <div className="max-w-2xl mx-auto">
             {renderContent()}
           </div>
         </main>
-        
         {/* Right Sidebar - Future: Trending, Suggestions, etc. */}
         <aside className="w-80 p-6 border-l border-border">
           <div className="space-y-6">
@@ -124,7 +176,6 @@ const Index = () => {
                 </div>
               </div>
             </div>
-            
             <div className="bg-card rounded-lg p-4 border border-border">
               <h3 className="font-semibold mb-3">⚡ Top Players</h3>
               <div className="space-y-3 text-sm">
