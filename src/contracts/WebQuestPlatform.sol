@@ -20,22 +20,22 @@ contract WebQuestPlatform is Ownable, ReentrancyGuard {
     
     // Structs
     struct User {
-    uint256 id;
-    address walletAddress;
-    string twitterHandle;
-    string username;
-    uint256 totalXP;
-    uint256 level;
-    uint256 postsCount;
-    uint256 questsCompleted;
-    uint256 joinedAt;
-    bool isActive;
-    // Tambahan untuk CEX dan daily checkin
-    string bindAddress;
-    string okxId;
-    string bitgetId;
-    string bybitId;
-    uint256 lastCheckin;
+        uint256 id;
+        address walletAddress;
+        string twitterHandle;
+        string username;
+        uint256 totalXP;
+        uint256 level;
+        uint256 postsCount;
+        uint256 questsCompleted;
+        uint256 joinedAt;
+        bool isActive;
+        // Tambahan untuk CEX dan daily checkin
+        string bindAddress;
+        string okxId;
+        string bitgetId;
+        string bybitId;
+        uint256 lastCheckin;
     }
     
     struct Post {
@@ -57,7 +57,7 @@ contract WebQuestPlatform is Ownable, ReentrancyGuard {
         uint256 xpReward;
         uint256 maxProgress;
         string difficulty; // "easy", "medium", "hard"
-        string questType; // "daily", "weekly", "special"
+        string questType;  // "daily", "weekly", "special"
         uint256 timeLimit;
         bool isActive;
     }
@@ -120,7 +120,6 @@ contract WebQuestPlatform is Ownable, ReentrancyGuard {
         require(posts[_postId].isActive, "Post does not exist");
         posts[_postId].comments++;
         _awardXP(msg.sender, COMMENT_XP_REWARD, "Post Comment");
-        // You can emit an event here if needed
     }
 
     /**
@@ -130,7 +129,6 @@ contract WebQuestPlatform is Ownable, ReentrancyGuard {
         require(registeredUsers[msg.sender], "User not registered");
         require(posts[_postId].isActive, "Post does not exist");
         _awardXP(msg.sender, SHARE_XP_REWARD, "Post Share");
-        // You can emit an event here if needed
     }
     
     /**
@@ -160,6 +158,13 @@ contract WebQuestPlatform is Ownable, ReentrancyGuard {
             bybitId: "",
             lastCheckin: 0
         });
+
+        registeredUsers[msg.sender] = true;
+        allUsers.push(msg.sender);
+        
+        emit UserRegistered(msg.sender, _username, _twitterHandle);
+    }
+
     /**
      * @dev Daily check-in, hanya bisa 1x/24 jam, dapat XP 50
      */
@@ -173,18 +178,17 @@ contract WebQuestPlatform is Ownable, ReentrancyGuard {
     /**
      * @dev Set bind address dan CEX ID (OKX, Bitget, Bybit)
      */
-    function setUserCexInfo(string memory _bindAddress, string memory _okxId, string memory _bitgetId, string memory _bybitId) external {
+    function setUserCexInfo(
+        string memory _bindAddress, 
+        string memory _okxId, 
+        string memory _bitgetId, 
+        string memory _bybitId
+    ) external {
         require(registeredUsers[msg.sender], "User not registered");
         users[msg.sender].bindAddress = _bindAddress;
         users[msg.sender].okxId = _okxId;
         users[msg.sender].bitgetId = _bitgetId;
         users[msg.sender].bybitId = _bybitId;
-    }
-        
-        registeredUsers[msg.sender] = true;
-        allUsers.push(msg.sender);
-        
-        emit UserRegistered(msg.sender, _username, _twitterHandle);
     }
     
     /**
@@ -214,7 +218,6 @@ contract WebQuestPlatform is Ownable, ReentrancyGuard {
         userPostIds[msg.sender].push(newPostId);
         users[msg.sender].postsCount++;
         
-        // Award XP for creating post
         _awardXP(msg.sender, POST_XP_REWARD, "Post Creation");
         
         emit PostCreated(newPostId, msg.sender, _content, POST_XP_REWARD);
@@ -232,7 +235,6 @@ contract WebQuestPlatform is Ownable, ReentrancyGuard {
         postLikes[_postId][msg.sender] = true;
         posts[_postId].likes++;
         
-        // Award XP to the person liking
         _awardXP(msg.sender, LIKE_XP_REWARD, "Post Like");
         
         emit PostLiked(_postId, msg.sender);
@@ -250,7 +252,6 @@ contract WebQuestPlatform is Ownable, ReentrancyGuard {
         postRetweets[_postId][msg.sender] = true;
         posts[_postId].retweets++;
         
-        // Award XP to the person retweeting
         _awardXP(msg.sender, RETWEET_XP_REWARD, "Post Retweet");
         
         emit PostRetweeted(_postId, msg.sender);
@@ -322,12 +323,10 @@ contract WebQuestPlatform is Ownable, ReentrancyGuard {
         require(registeredUsers[_user], "User not registered");
         require(quests[_questId].isActive, "Quest does not exist");
         require(userQuests[_user][_questId].startedAt > 0, "Quest not started");
-        // <-- fixed typo here: check .completed (not .complete_]()_()])
         require(!userQuests[_user][_questId].completed, "Quest already completed");
         
         userQuests[_user][_questId].progress = _progress;
         
-        // Check if quest is completed
         if (_progress >= quests[_questId].maxProgress) {
             userQuests[_user][_questId].completed = true;
             emit QuestCompleted(_questId, _user, quests[_questId].xpReward);
@@ -347,7 +346,6 @@ contract WebQuestPlatform is Ownable, ReentrancyGuard {
         userQuests[msg.sender][_questId].claimed = true;
         users[msg.sender].questsCompleted++;
         
-        // Award XP
         _awardXP(msg.sender, quests[_questId].xpReward, "Quest Completion");
     }
     
