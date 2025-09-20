@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAccount, useReadContract, useConfig } from 'wagmi';
 import { writeContract } from 'wagmi/actions';
-import { CONTRACT_ADDRESS, CONTRACT_ABI } from '@/lib/blockchainConfig';
+import { CONTRACT_ADDRESS, CONTRACT_ABI, EXPLORER_URL } from '@/lib/blockchainConfig';
 import { toast } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -59,19 +59,15 @@ export const SocialPost: React.FC<SocialPostProps> = ({
 
   const { address } = useAccount();
   const config = useConfig();
-  const { data: userData } = useReadContract({
+  const { data: profile } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: CONTRACT_ABI,
-    functionName: 'users',
+    functionName: 'getProfile',
     args: address ? [address] : undefined,
     query: { enabled: !!address },
   });
 
-  const isRegistered =
-    userData &&
-    typeof userData === 'object' &&
-    'isActive' in userData &&
-    (userData as any).isActive;
+  const isRegistered = profile && (profile as any).exists;
 
   // Handler for Like
   const handleLike = async () => {
@@ -96,14 +92,14 @@ export const SocialPost: React.FC<SocialPostProps> = ({
         toast(
           <span>
             Like sent!{' '}
-            <a
-              href={`https://explorer.uomi.ai/tx/${tx}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline text-primary"
-            >
-              View on Explorer
-            </a>
+              <a
+                href={`${EXPLORER_URL}/tx/${tx}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline text-primary"
+              >
+                View on Explorer
+              </a>
           </span>
         );
       }
@@ -137,7 +133,7 @@ export const SocialPost: React.FC<SocialPostProps> = ({
           <span>
             Retweet sent!{' '}
             <a
-              href={`https://explorer.uomi.ai/tx/${tx}`}
+              href={`${EXPLORER_URL}/tx/${tx}`}
               target="_blank"
               rel="noopener noreferrer"
               className="underline text-primary"
@@ -177,7 +173,7 @@ export const SocialPost: React.FC<SocialPostProps> = ({
           <span>
             Comment sent!{' '}
             <a
-              href={`https://explorer.uomi.ai/tx/${tx}`}
+              href={`${EXPLORER_URL}/tx/${tx}`}
               target="_blank"
               rel="noopener noreferrer"
               className="underline text-primary"
@@ -215,7 +211,7 @@ export const SocialPost: React.FC<SocialPostProps> = ({
           <span>
             Share sent!{' '}
             <a
-              href={`https://explorer.uomi.ai/tx/${tx}`}
+              href={`${EXPLORER_URL}/tx/${tx}`}
               target="_blank"
               rel="noopener noreferrer"
               className="underline text-primary"

@@ -3,14 +3,30 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { WagmiProvider, createConfig, http } from 'wagmi';
-import { mainnet } from 'wagmi/chains';
+import { defineChain } from 'viem';
+import { CHAIN_ID, RPC_URL, EXPLORER_URL } from '@/lib/blockchainConfig';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-// Ganti mainnet dengan chain Uomi jika sudah ada, atau tambahkan chain custom jika perlu
+// Define custom Sepolia chain, config diambil dari blockchainConfig.ts
+const sepoliaChain = defineChain({
+  id: CHAIN_ID,
+  name: 'Ethereum Sepolia',
+  network: 'sepolia',
+  nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+  rpcUrls: {
+    default: { http: [RPC_URL] },
+    public: { http: [RPC_URL] },
+  },
+  blockExplorers: {
+    default: { name: 'Etherscan', url: EXPLORER_URL.replace(/\/$/, '') },
+  },
+  testnet: true,
+});
+
 const config = createConfig({
-	chains: [mainnet], // Ganti dengan chain Uomi jika sudah ada
+	chains: [sepoliaChain],
 	transports: {
-		[mainnet.id]: http('https://mainnet.infura.io/v3/YOUR_INFURA_KEY'), // Ganti dengan RPC Uomi jika perlu
+		[CHAIN_ID]: http(RPC_URL),
 	},
 	// Tambahkan connector jika perlu
 });

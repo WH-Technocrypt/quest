@@ -16,10 +16,10 @@ import {
 } from 'lucide-react';
 import { mockUser } from '@/data/mockData';
 
-import { useAccount, useConnect, useConfig } from 'wagmi';
+import { useAccount, useConnect, useConfig, useReadContract } from 'wagmi';
 import { writeContract } from 'wagmi/actions';
 import { toast } from '@/components/ui/sonner';
-import { CONTRACT_ADDRESS, CONTRACT_ABI } from '@/lib/blockchainConfig';
+import { CONTRACT_ADDRESS, CONTRACT_ABI, EXPLORER_URL } from '@/lib/blockchainConfig';
 
 export const Profile = () => {
   const config = useConfig();
@@ -35,16 +35,26 @@ export const Profile = () => {
   const [bitgetId, setBitgetId] = useState("");
   const [bybitId, setBybitId] = useState("");
   
+  const { data: profile } = useReadContract({
+    address: CONTRACT_ADDRESS,
+    abi: CONTRACT_ABI,
+    functionName: 'getProfile',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address },
+  });
+
   const handleSave = async () => {
     if (!address) {
       toast.error('Wallet not connected');
       return;
     }
     try {
+      const isRegistered = profile && (profile as any).exists;
+      const fn = isRegistered ? 'updateProfile' : 'register';
       const txHash = await writeContract(config, {
         address: CONTRACT_ADDRESS,
         abi: CONTRACT_ABI,
-        functionName: 'registerUser',
+        functionName: fn,
         args: [username, displayName],
         account: address,
         chain: config.chains[0],
@@ -54,7 +64,7 @@ export const Profile = () => {
           <span>
             Profile updated!{' '}
             <a
-              href={`https://explorer.uomi.ai/tx/${txHash}`}
+              href={`${EXPLORER_URL}/tx/${txHash}`}
               target="_blank"
               rel="noopener noreferrer"
               className="underline text-primary"
